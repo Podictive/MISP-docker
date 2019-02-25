@@ -1,0 +1,52 @@
+image: docker:latest
+
+# When using dind, it's wise to use the overlayfs driver for
+# improved performance.
+variables:
+  DOCKER_DRIVER: overlay2
+  GIT_SUBMODULE_STRATEGY: recursive
+
+services:
+- docker:dind
+
+before_script:
+- docker info
+- docker login -u "gitlab-ci-token" -p "$CI_JOB_TOKEN" $CI_REGISTRY
+- export BRANCHE_NAME=$(echo -en $CI_COMMIT_REF_NAME | tr -c '[:alnum:]_.-' '-')
+
+build:
+  tags: 
+  - docker
+  stage: build
+  script:
+  - docker build --pull -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA"  .
+  - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA"
+
+test:
+  tags:
+  - docker
+  stage: test
+  script:
+  - docker info
+
+
+deploy_latest: 
+  tags:
+  - docker
+  stage: deploy
+  only:
+    refs:
+      - master
+  script:
+  - docker pull "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA"
+  - docker tag "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA" "$CI_REGISTRY_IMAGE:latest"
+  - docker push "$CI_REGISTRY_IMAGE:latest"
+
+deploy_branch: 
+  tags:
+  - docker
+  stage: deploy
+  script:
+  - docker pull "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA"
+  - docker tag "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA" "$CI_REGISTRY_IMAGE:$BRANCHE_NAME"
+  - docker push "$CI_REGISTRY_IMAGE:$BRANCHE_NAME"
