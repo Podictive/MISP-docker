@@ -2,7 +2,7 @@ version: '2'
 
 services:
   misp:
-    build: misp
+    build: .
     image: misp:latest
     restart: unless-stopped
     ports:
@@ -10,7 +10,7 @@ services:
     volumes:
       - /dev/urandom:/dev/random
       - /data/misp/web:/var/www/MISP
-#      - ./config/core.php:/var/www/MISP/app/Config/core.php:ro
+      - ./config/config.php:/var/www/MISP/app/Config/config.php:ro
       - ./config/database.php:/var/www/MISP/app/Config/database.php:ro
       - ./config/email.php:/var/www/MISP/app/Config/email.php:ro
       - ./config/resque_config.php:/var/www/MISP/app/Plugin/CakeResque/Config/config.php:ro
