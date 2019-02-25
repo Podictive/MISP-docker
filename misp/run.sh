@@ -16,7 +16,7 @@ if [ -r /.firstboot.tmp ]; then
         export DEBIAN_FRONTEND=noninteractive
 
         # If the user uses a mount point restore our files
-        if [ ! -d /var/www/MISP/app ]; then
+        if [ ! -f /var/www/MISP/VERSION.json ]; then
                 echo "Restoring MISP files..."
                 cd /var/www/MISP
                 tar xzpf /root/MISP.tgz
@@ -73,7 +73,7 @@ if [ -r /.firstboot.tmp ]; then
                         echo "Database misp available"
                 else
                         echo "Database misp empty, creating tables ..."
-                        ret=`mysql -u $MYSQL_USER --password="$MYSQL_PASSWORD" $MYSQL_DATABASE -h $MYSQL_HOST -P 3306 2>&1 < /var/www/MISP/INSTALL/MYSQL.sql`
+                        ret=`mysql -u $MYSQL_USER --password="$MYSQL_PASSWORD" $MYSQL_DATABASE -h $MYSQL_HOST -P 3306 < /var/www/MISP/INSTALL/MYSQL.sql`
                         if [ $? -eq 0 ]; then
                             echo "Imported /var/www/MISP/INSTALL/MYSQL.sql successfully"
                         else
@@ -84,44 +84,6 @@ if [ -r /.firstboot.tmp ]; then
         else
                 echo "ERROR: Connecting to database failed:"
                 echo $ret
-        fi
-
-        # MISP configuration
-        echo "Creating MISP configuration files"
-        cd /var/www/MISP/app/Config
-        cp -a database.default.php database.php
-        sed -i "s/localhost/$MYSQL_HOST/" database.php
-        sed -i "s/db\s*login/$MYSQL_DATABASE/" database.php
-        sed -i "s/8889/3306/" database.php
-        sed -i "s/db\s*password/$MYSQL_PASSWORD/" database.php
-
-        # Fix the base url
-        if [ -z "$MISP_BASEURL" ]; then
-                echo "No base URL defined, don't forget to define it manually!"
-        else
-                echo "Fixing the MISP base URL ($MISP_BASEURL) ..."
-                sed -i "s/'baseurl' => '',/'baseurl' => '$MISP_BASEURL',/" /var/www/MISP/app/Config/config.php
-        fi
-
-        # Generate the admin user PGP key
-        echo "Creating admin GnuPG key"
-        if [ -z "$MISP_ADMIN_EMAIL" -o -z "$MISP_ADMIN_PASSPHRASE" ]; then
-                echo "No admin details provided, don't forget to generate the PGP key manually!"
-        else
-                echo "Generating admin PGP key ... (please be patient, we need some entropy)"
-                cat >/tmp/gpg.tmp <<GPGEOF
-%echo Generating a basic OpenPGP key
-Key-Type: RSA
-Key-Length: 2048
-Name-Real: MISP Admin
-Name-Email: $MISP_ADMIN_EMAIL
-Expire-Date: 0
-Passphrase: $MISP_ADMIN_PASSPHRASE
-%commit
-%echo Done
-GPGEOF
-                sudo -u www-data gpg --homedir /var/www/MISP/.gnupg --gen-key --batch /tmp/gpg.tmp >>/tmp/install.log
-                rm -f /tmp/gpg.tmp
         fi
 
         # Display tips
@@ -136,8 +98,5 @@ __WELCOME__
         rm -f /.firstboot.tmp
 fi
 
-# Start supervisord
-echo "Starting supervisord"
 cd /
-exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
-          
+exec "$@"          

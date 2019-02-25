@@ -1,9 +1,8 @@
 version: '2'
 
 services:
-  web:
-    build: web
-    container_name: misp_web
+  misp:
+    build: misp
     image: misp:latest
     restart: unless-stopped
     ports:
@@ -11,23 +10,27 @@ services:
     volumes:
       - /dev/urandom:/dev/random
       - /data/misp/web:/var/www/MISP
+#      - ./config/core.php:/var/www/MISP/app/Config/core.php:ro
+      - ./config/database.php:/var/www/MISP/app/Config/database.php:ro
+      - ./config/email.php:/var/www/MISP/app/Config/email.php:ro
+      - ./config/resque_config.php:/var/www/MISP/app/Plugin/CakeResque/Config/config.php:ro
     environment:
       - MYSQL_HOST=db
       - MYSQL_DATABASE=misp
       - MYSQL_USER=misp
       - MYSQL_PASSWORD=misp
-      - MISP_ADMIN_EMAIL=admin@admin.test
-      - MISP_ADMIN_PASSPHRASE=admin
-      - MISP_BASEURL=http:\/\/misp\.test
       - POSTFIX_RELAY_HOST=relay.fqdn
       - TIMEZONE=Europe/Brussels
 
+  redis:
+    image: redis
+    restart: unless-stopped
+
   db:
-    container_name: misp_db
     image: mysql/mysql-server:5.7
     restart: unless-stopped
     volumes:
-      - /data/misp/db:/var/lib/mysql
+      - ./data/db:/var/lib/mysql
     environment:
       - MYSQL_DATABASE=misp
       - MYSQL_USER=misp

@@ -9,7 +9,7 @@
 # 
 
 # We are based on Ubuntu:latest
-FROM ubuntu:xenial
+FROM ubuntu:bionic
 MAINTAINER Xavier Mertens <xavier@rootshell.be>
 
 # Install core components
@@ -17,7 +17,7 @@ ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update && apt-get dist-upgrade -y && apt-get autoremove -y && apt-get clean
 RUN apt-get install -y software-properties-common
 RUN apt-get install -y postfix
-RUN apt-get install -y mysql-client curl gcc git gnupg-agent make python openssl redis-server sudo vim zip locales
+RUN apt-get install -y mysql-client curl gcc git gnupg-agent make python openssl sudo vim zip locales
 
 RUN locale-gen en_US.UTF-8
 ENV LANG en_US.UTF-8
@@ -29,7 +29,7 @@ RUN a2dismod status
 RUN a2dissite 000-default
 
 # PHP 7.2
-RUN apt-get install -y libapache2-mod-php php7.2 php7.2-cli php-crypt-gpg php7.2-dev php7.2-json php7.2-mysql php7.2-opcache php7.2-readline php7.2-redis php7.2-xml
+RUN apt-get install -y libapache2-mod-php php7.2 php7.2-cli  php7.2-dev php7.2-json php7.2-mysql php7.2-opcache php7.2-readline php7.2-redis php7.2-xml php7.2-mbstring
 RUN apt-get install -y php-pear pkg-config libbson-1.0 libmongoc-1.0-0 php-xml php-dev
 
 # Fix php.ini with recommended settings
@@ -38,32 +38,52 @@ RUN sed -i "s/memory_limit = 128M/memory_limit = 512M/" /etc/php/7.2/apache2/php
 RUN sed -i "s/upload_max_filesize = 2M/upload_max_filesize = 50M/" /etc/php/7.2/apache2/php.ini
 RUN sed -i "s/post_max_size = 8M/post_max_size = 50M/" /etc/php/7.2/apache2/php.ini
 
-RUN apt-get install -y python-dev python-pip libxml2-dev libxslt1-dev zlib1g-dev python-setuptools libfuzzy-dev
-RUN apt-get install -y cron logrotate supervisor syslog-ng-core
-RUN apt-get clean
+RUN apt-get install -y python3 python3-pip libjpeg-dev libxml2-dev libxslt1-dev zlib1g-dev  libfuzzy-dev cron logrotate supervisor syslog-ng-core && apt-get clean
+#RUN apt-get install -y python-dev python-pip  
+
+#RUN pip install --upgrade setuptools pip
+RUN pip3 install --upgrade setuptools pip
 
 WORKDIR /var/www
 RUN chown www-data:www-data /var/www
 USER www-data
 RUN git clone https://github.com/MISP/MISP.git
 WORKDIR /var/www/MISP
-RUN git checkout tags/$(git describe --tags `git rev-list --tags --max-count=1`)
+RUN git submodule update --init --recursive
+  # Make git ignore filesystem permission differences for submodules
+RUN git submodule foreach --recursive git config core.filemode false
+#RUN git checkout tags/$(git describe --tags `git rev-list --tags --max-count=1`)
 RUN git config core.filemode false
 
 WORKDIR /var/www/MISP/app/files/scripts
 RUN git clone https://github.com/CybOXProject/python-cybox.git
 RUN git clone https://github.com/STIXProject/python-stix.git
+RUN git clone https://github.com/MAECProject/python-maec.git
+  # install mixbox to accommodate the new STIX dependencies:
+RUN git clone https://github.com/CybOXProject/mixbox.git
+
+WORKDIR /var/www/MISP/app/files/scripts/mixbox
+USER root
+RUN python3 setup.py install
+
+WORKDIR /var/www/MISP/app/files/scripts/python-maec
+USER root
+RUN python3 setup.py install
 
 WORKDIR /var/www/MISP/app/files/scripts/python-cybox
-RUN git checkout v2.1.0.12
+#RUN git checkout v2.1.0.12
 USER root
-RUN python setup.py install
+RUN python3 setup.py install
 
 USER www-data
 WORKDIR /var/www/MISP/app/files/scripts/python-stix
-RUN git checkout v1.1.1.4
+#RUN git checkout v1.1.1.4
 USER root
-RUN python setup.py install
+RUN python3 setup.py install
+
+WORKDIR /var/www/MISP/cti-python-stix2
+USER root
+RUN python3 setup.py install
 
 USER www-data
 WORKDIR /var/www/MISP
@@ -91,8 +111,6 @@ RUN cp /var/www/MISP/INSTALL/misp.logrotate /etc/logrotate.d/misp
 RUN echo "postfix postfix/main_mailer_type string Local only" | debconf-set-selections
 RUN echo "postfix postfix/mailname string localhost.localdomain" | debconf-set-selections
 
-# Redis Setup
-RUN sed -i 's/^\(daemonize\s*\)yes\s*$/\1no/g' /etc/redis/redis.conf
 
 # Install PEAR packages
 RUN pear install Crypt_GPG >>/tmp/install.log
@@ -130,14 +148,19 @@ RUN chown -R www-data:www-data misp-objects misp-galaxy warninglists taxonomies
 
 # Install MISP Modules
 WORKDIR /opt
-RUN apt-get install -y python3 python3-pip libjpeg-dev
 RUN git clone https://github.com/MISP/misp-modules.git
 WORKDIR /opt/misp-modules
-RUN pip3 install --upgrade --ignore-installed urllib3
-RUN pip3 install --upgrade --ignore-installed requests
+RUN pip3 install --upgrade --ignore-installed urllib3 requests setuptools
 RUN pip3 install -I -r REQUIREMENTS
 RUN pip3 install -I .
+RUN pip3 install git+https://github.com/kbandla/pydeep.git
+RUN pip3 install https://github.com/lief-project/packages/raw/lief-master-latest/pylief-0.9.0.dev.zip
+RUN pip3 install python-magic
 RUN echo "sudo -u www-data misp-modules -s -l 127.0.0.1 &" >>/etc/rc.local
+
+# Install Crypt_GPG and Console_CommandLine
+RUN pear install /var/www/MISP/INSTALL/dependencies/Console_CommandLine/package.xml
+RUN pear install /var/www/MISP/INSTALL/dependencies/Crypt_GPG/package.xml
 
 # Supervisord Setup
 RUN echo '[supervisord]' >> /etc/supervisor/conf.d/supervisord.conf
@@ -149,9 +172,6 @@ RUN echo 'directory = /etc/postfix' >> /etc/supervisor/conf.d/supervisord.conf
 RUN echo 'command = /usr/sbin/postfix -c /etc/postfix start' >> /etc/supervisor/conf.d/supervisord.conf
 RUN echo 'startsecs = 0' >> /etc/supervisor/conf.d/supervisord.conf
 RUN echo 'autorestart = false' >> /etc/supervisor/conf.d/supervisord.conf
-RUN echo '' >> /etc/supervisor/conf.d/supervisord.conf
-RUN echo '[program:redis-server]' >> /etc/supervisor/conf.d/supervisord.conf
-RUN echo 'command=redis-server /etc/redis/redis.conf' >> /etc/supervisor/conf.d/supervisord.conf
 RUN echo '' >> /etc/supervisor/conf.d/supervisord.conf
 RUN echo '[program:apache2]' >> /etc/supervisor/conf.d/supervisord.conf
 RUN echo 'command=/bin/bash -c "source /etc/apache2/envvars && exec /usr/sbin/apache2 -D FOREGROUND"' >> /etc/supervisor/conf.d/supervisord.conf
@@ -185,3 +205,4 @@ RUN tar czpf /root/MISP.tgz .
 VOLUME /var/www/MISP
 EXPOSE 80
 ENTRYPOINT ["/run.sh"]
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
