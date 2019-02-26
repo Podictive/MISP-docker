@@ -119,7 +119,7 @@ RUN chmod a+x /var/www/MISP/app/Console/worker/start.sh && echo "sudo -u www-dat
 WORKDIR /opt
 RUN git clone https://github.com/MISP/misp-modules.git
 WORKDIR /opt/misp-modules
-RUN pip3 install --upgrade --ignore-installed urllib3 requests setuptools && \
+RUN pip3 install --upgrade --ignore-installed urllib3 requests setuptools reportlab && \
         pip3 install -I -r REQUIREMENTS && \
         pip3 install -I . && \
         pip3 install git+https://github.com/kbandla/pydeep.git \
