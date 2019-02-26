@@ -10,7 +10,7 @@ Specifically, the following things have changed:
 * it is now based on ubuntu:bionic;
 * externalized redis;
 * removed some unnecessary dependencies;
-* create VOLUMEs only on the configuration/storage parts of MISP config.
+* ~~create VOLUMEs only on the configuration/storage parts of MISP config.~~ Too complicated, but would like advise on the how-to if someone knows
 
 The MISP container needs at least an external MySQL and Redis container to store the data. By default it listen to port 80. I highly recommend to serve it behind a NGinx or Apache reverse proxy.
 
