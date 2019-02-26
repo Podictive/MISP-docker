@@ -18,13 +18,13 @@ ENV DEBIAN_FRONTEND noninteractive
 # Install dependencies
 RUN apt-get update && apt-get install -y  apache2 apache2-doc apache2-utils  \
                         software-properties-common postfix mysql-client curl gcc git gnupg-agent \
-                        make openssl sudo vim zip locales \
+                        make openssl vim zip locales \
                         apache2 apache2-doc apache2-utils  \
                         libapache2-mod-php php7.2 php7.2-cli  php7.2-dev php7.2-json \
                         php7.2-mysql php7.2-opcache php7.2-readline php7.2-redis php7.2-xml php7.2-mbstring \
                         php-pear pkg-config libbson-1.0 libmongoc-1.0-0 php-xml php-dev \
                         python3 python3-pip libjpeg-dev libxml2-dev libxslt1-dev zlib1g-dev  \
-                        libfuzzy-dev cron logrotate supervisor syslog-ng-core && apt-get clean
+                        libfuzzy-dev logrotate supervisor syslog-ng-core && apt-get clean
 
 RUN locale-gen en_US.UTF-8
 ENV LANG en_US.UTF-8
@@ -47,7 +47,10 @@ RUN git submodule update --init --recursive && git submodule foreach --recursive
 #RUN git checkout tags/$(git describe --tags `git rev-list --tags --max-count=1`)
 
 WORKDIR /var/www/MISP/app/files/scripts
-RUN git clone https://github.com/CybOXProject/python-cybox.git &&  git clone https://github.com/STIXProject/python-stix.git && git clone https://github.com/MAECProject/python-maec.git && git clone https://github.com/CybOXProject/mixbox.git
+RUN git clone https://github.com/CybOXProject/python-cybox.git && \
+	git clone https://github.com/STIXProject/python-stix.git && \
+	git clone https://github.com/MAECProject/python-maec.git && \
+	git clone https://github.com/CybOXProject/mixbox.git
 
 USER root
 
@@ -113,7 +116,7 @@ USER root
 RUN sed -i -E "s/'salt'\s=>\s'(\S+)'/'salt' => '`openssl rand -base64 32|tr "/" "-"`'/" /var/www/MISP/app/Config/config.php
 
 # Enable workers at boot time
-RUN chmod a+x /var/www/MISP/app/Console/worker/start.sh && echo "sudo -u www-data bash /var/www/MISP/app/Console/worker/start.sh" >>/etc/rc.local
+RUN chmod a+x /var/www/MISP/app/Console/worker/start.sh
 
 # Install MISP Modules
 WORKDIR /opt
@@ -125,7 +128,6 @@ RUN pip3 install --upgrade --ignore-installed urllib3 requests setuptools report
         pip3 install git+https://github.com/kbandla/pydeep.git \
                      https://github.com/lief-project/packages/raw/lief-master-latest/pylief-0.9.0.dev.zip \
                      python-magic
-RUN echo "sudo -u www-data misp-modules -s -l 127.0.0.1 &" >>/etc/rc.local
 
 # Enable php-redis and Install Crypt_GPG and Console_CommandLine
 RUN phpenmod redis && \
