@@ -53,3 +53,12 @@ $ docker-compose build
 ```
 $ docker-compose up
 ```
+
+# Errors
+
+## GPG problems
+
+Check, check and recheck:
+* The ownership of the ./gpg directory and all its files are www-data:www-data
+* The generation of the GPG key was succesful. For me it sometimes failed to generate a private key.
+* The correct emailaddress and passphrase was entered in http://localhost/servers/serverSettings/Encryption
