@@ -42,8 +42,9 @@ RUN chown www-data:www-data /var/www
 USER www-data
 RUN git clone https://github.com/MISP/MISP.git
 WORKDIR /var/www/MISP
-RUN git config core.filemode false
-RUN git submodule update --init --recursive && git submodule foreach --recursive git config core.filemode false
+RUN git config core.filemode false && \
+	git submodule update --init --recursive && \
+	git submodule foreach --recursive git config core.filemode false
 #RUN git checkout tags/$(git describe --tags `git rev-list --tags --max-count=1`)
 
 WORKDIR /var/www/MISP/app/files/scripts
@@ -90,10 +91,6 @@ RUN cp /var/www/MISP/INSTALL/misp.logrotate /etc/logrotate.d/misp
 RUN echo "postfix postfix/main_mailer_type string Local only" | debconf-set-selections && \
     echo "postfix postfix/mailname string localhost.localdomain" | debconf-set-selections
 
-
-# Install PEAR packages
-#RUN pear install Crypt_GPG >>/tmp/install.log &&  pear install Net_GeoIP >>/tmp/install.log
-
 # Apache Setup
 RUN cp /var/www/MISP/INSTALL/apache.misp.ubuntu /etc/apache2/sites-available/misp.conf && \
         a2dissite 000-default && \
@@ -101,7 +98,6 @@ RUN cp /var/www/MISP/INSTALL/apache.misp.ubuntu /etc/apache2/sites-available/mis
         a2enmod headers && a2dismod status && a2dissite 000-default
 
 # MISP base configuration
-
 USER www-data
 RUN cp -a /var/www/MISP/app/Config/bootstrap.default.php /var/www/MISP/app/Config/bootstrap.php && \
     cp -a /var/www/MISP/app/Config/database.default.php /var/www/MISP/app/Config/database.php && \
@@ -153,5 +149,6 @@ RUN tar czpf /root/MISP.tgz .
 
 VOLUME /var/www/MISP
 EXPOSE 80
+#USER www-data
 ENTRYPOINT ["/run.sh"]
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

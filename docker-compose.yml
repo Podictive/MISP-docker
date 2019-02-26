@@ -8,9 +8,9 @@ services:
     ports:
       - "80:80"
     volumes:
-      - /dev/urandom:/dev/random
-      - /data/misp/web:/var/www/MISP
-      - ./config/config.php:/var/www/MISP/app/Config/config.php:ro
+      - /dev/urandom:/dev/urandom
+      - ./gpg/:/var/www/MISP/.gnupg
+      - ./config/config.php:/var/www/MISP/app/Config/config.php
       - ./config/database.php:/var/www/MISP/app/Config/database.php:ro
       - ./config/email.php:/var/www/MISP/app/Config/email.php:ro
       - ./config/resque_config.php:/var/www/MISP/app/Plugin/CakeResque/Config/config.php:ro

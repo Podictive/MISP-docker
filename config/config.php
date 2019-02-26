@@ -42,9 +42,9 @@ $config = array (
   'GnuPG' => 
   array (
     'onlyencrypted' => false,
-    'email' => '',
-    'homedir' => '',
-    'password' => '',
+    'email' => 'test@example.com',
+    'homedir' => '/var/www/MISP/.gnupg',
+    'password' => 'password',
     'bodyonlyencrypted' => false,
     'sign' => true,
   ),
