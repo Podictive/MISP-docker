@@ -136,6 +136,11 @@ COPY --chown=root:root supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 # Modify syslog configuration
 RUN sed -i -E 's/^(\s*)system\(\);/\1unix-stream("\/dev\/log");/' /etc/syslog-ng/syslog-ng.conf
 
+# Make a backup of /var/www/MISP to restore it to the local moint point at first boot
+WORKDIR /var/www/MISP
+RUN tar czpf /root/MISP.tgz .
+VOLUME /var/www/MISP
+
 # Add run script
 COPY --chown=root:root run.sh /run.sh
 RUN chmod 0755 /run.sh
@@ -143,11 +148,6 @@ RUN chmod 0755 /run.sh
 # Trigger to perform first boot operations
 RUN touch /.firstboot.tmp
 
-# Make a backup of /var/www/MISP to restore it to the local moint point at first boot
-WORKDIR /var/www/MISP
-RUN tar czpf /root/MISP.tgz .
-
-VOLUME /var/www/MISP
 EXPOSE 80
 #USER www-data
 ENTRYPOINT ["/run.sh"]

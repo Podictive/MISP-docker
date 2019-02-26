@@ -10,11 +10,11 @@ services:
     volumes:
       - /dev/urandom:/dev/urandom
       - ./gpg/:/var/www/MISP/.gnupg
-      - ./config/config.php:/var/www/MISP/app/Config/config.php
-      - ./config/database.php:/var/www/MISP/app/Config/database.php:ro
-      - ./config/email.php:/var/www/MISP/app/Config/email.php:ro
-      - ./config/resque_config.php:/var/www/MISP/app/Plugin/CakeResque/Config/config.php:ro
+# Not required:     - ./config/config.php:/var/www/MISP/app/Config/config.php
+# Not required:     - ./config/resque_config.php:/var/www/MISP/app/Plugin/CakeResque/Config/config.php:ro
     environment:
+      - MISP_BASEURL=http://localhost/
+      - REDIS_HOST=redis
       - MYSQL_HOST=db
       - MYSQL_DATABASE=misp
       - MYSQL_USER=misp

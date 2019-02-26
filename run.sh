@@ -86,6 +86,32 @@ if [ -r /.firstboot.tmp ]; then
                 echo $ret
         fi
 
+        # MISP configuration
+        echo "Creating Database configuration file"
+        cd /var/www/MISP/app/Config
+        cp -a database.default.php database.php
+        sed -i "s/localhost/$MYSQL_HOST/" database.php
+        sed -i "s/db\s*login/$MYSQL_DATABASE/" database.php
+        sed -i "s/8889/3306/" database.php
+        sed -i "s/db\s*password/$MYSQL_PASSWORD/" database.php
+
+        if [ -z "$REDIS_HOST" ]; then
+            echo "No REDIS_HOST defined. Defaulting to 'redis'"
+            sed -i "s|'host' => 'localhost',|'host' => 'redis',|"         /var/www/MISP/app/Plugin/CakeResque/Config/config.php
+        else
+            echo "Changing REDIS hostname to ${REDIS_HOST}"
+            sed -i "s|'host' => 'localhost',|'host' => '${REDIS_HOST}',|" /var/www/MISP/app/Plugin/CakeResque/Config/config.php
+        fi
+
+        # Fix the base url
+        if [ -z "$MISP_BASEURL" ]; then
+                echo "No base URL defined, don't forget to define it manually!"
+        else
+                echo "Fixing the MISP base URL ($MISP_BASEURL) ..."
+                sed -i "s|'baseurl' => '',|'baseurl' => '$MISP_BASEURL',|" /var/www/MISP/app/Config/config.php
+        fi
+        
+
         # Display tips
         cat <<__WELCOME__
 Congratulations!
