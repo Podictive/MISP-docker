@@ -24,7 +24,8 @@ RUN apt-get update && apt-get install -y  apache2 apache2-doc apache2-utils  \
                         php7.2-mysql php7.2-opcache php7.2-readline php7.2-redis php7.2-xml php7.2-mbstring \
                         php-pear pkg-config libbson-1.0 libmongoc-1.0-0 php-xml php-dev \
                         python3 python3-pip libjpeg-dev libxml2-dev libxslt1-dev zlib1g-dev  \
-                        libfuzzy-dev logrotate supervisor syslog-ng-core && apt-get clean
+                        libfuzzy-dev logrotate supervisor syslog-ng-core \
+			build-essential libpoppler-cpp-dev python-dev && apt-get clean
 
 RUN locale-gen en_US.UTF-8
 ENV LANG en_US.UTF-8
